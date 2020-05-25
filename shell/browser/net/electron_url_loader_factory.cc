@@ -236,8 +236,17 @@ void ElectronURLLoaderFactory::StartLoading(
   // API in WebRequestProxyingURLLoaderFactory.
   std::string location;
   if (head->headers->IsRedirect(&location)) {
+    auto newLocation = GURL(location);
     network::ResourceRequest new_request = request;
-    new_request.url = GURL(location);
+    new_request.url = newLocation;
+    new_request.site_for_cookies = newLocation;
+
+    net::RedirectInfo redirect_info;
+    redirect_info.status_code = head.headers->response_code();
+    redirect_info.new_method = request.method;
+    redirect_info.new_url = newLocation;
+    redirect_info.new_site_for_cookies = newLocation;
+    client->OnReceiveRedirect(redirect_info, head);
     // When the redirection comes from an intercepted scheme (which has
     // |proxy_factory| passed), we askes the proxy factory to create a loader
     // for new URL, otherwise we call |StartLoadingHttp|, which creates
